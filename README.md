@@ -16,10 +16,6 @@ sudo apt install python3-mido
 sudo apt install python3-pynput
 ```
 
-## Known Bugs
-- Stopping playback doesn't end
-- more to add...
-
 ## Future Plans
 - Make a GUI (GUI is already made, I just need to add the functions to it.)
 ![image](https://github.com/user-attachments/assets/97bc5e84-e25a-4d56-a93c-d91f335cd61c)
