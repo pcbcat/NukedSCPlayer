@@ -3,7 +3,7 @@ import argparse
 import sys
 import threading
 import time
-from os import system, name
+import os
 from pynput import keyboard
 
 # Global control flags
@@ -12,18 +12,63 @@ is_stopped = False
 pan_value = 0 # Default pan (center)
 reverb_value = 0 # Default reverb (middle value)
 level_value = 100  # Default volume (full)
+file_name = None
 
 # MIDI output port for control changes
 outport = None
 
+"""
+if os.name == "posix":  # Linux/macOS (only works for X11)
+    try:
+        from Xlib import display
+
+        def is_terminal_focused():
+            try:
+                d = display.Display()
+                w = d.get_input_focus().focus
+                wm_class = w.get_wm_class()
+                
+                if wm_class:
+                    terminal_classes = ["gnome-terminal", "x-terminal-emulator", "konsole", "xfce4-terminal", "lxterminal", "alacritty", "tilix"]
+                    return any(term in wm_class for term in terminal_classes)
+            except Exception:
+                return False
+            return False
+
+    except ImportError:
+        def is_terminal_focused():
+            return True  # Assume always focused if Xlib is missing
+
+elif os.name == "nt":  # Windows
+    try:
+        import pygetwindow as gw
+
+        def is_terminal_focused():
+            try:
+                active_window = gw.getActiveWindow()
+                if active_window:
+                    return any(term in active_window.title.lower() for term in ["cmd", "powershell", "terminal", "command prompt"])
+            except Exception:
+                return False
+            return False
+
+    except ImportError:
+        def is_terminal_focused():
+            return True  # Assume always focused if pygetwindow is missing
+
+else:
+    def is_terminal_focused():
+        return True  # Default for unsupported OS
+"""
+
 def clear():
-    if name == 'nt':
-        _ = system('cls')
+    if os.name == 'nt':
+        _ = os.system('cls')
     else:
-        _ = system('clear')
+        _ = os.system('clear')
 
 def list_ports():
-    """Lists available MIDI output ports."""
+    # Lists available MIDI output ports.
     ports = mido.get_output_names()
     if not ports:
         print("No MIDI output ports available.")
@@ -32,8 +77,9 @@ def list_ports():
         for port in ports:
             print(f"  - {port}")
 
+
 def play_midi(file_path, port_name):
-    """Plays a MIDI file through the selected output port with playback controls."""
+    # Plays a MIDI file through the selected output port with playback controls.
     global is_paused, is_stopped, pan_value, reverb_value, level_value, outport
 
     try:
@@ -50,27 +96,28 @@ def play_midi(file_path, port_name):
             sys.exit(2)
 
         clear()
-        print("\n🎵 Now playing:", file_path)
+        print("\n🎵 Now playing:", file_name)
         print("Controls: [SPACE] Pause/Resume  |  [Q] Quit  |  [P] Pan  |  [R] Reverb  |  [L] Level\n")
 
         # Send initial control change for pan, reverb, and level
         outport.send(mido.Message('control_change', control=10, value=pan_value))  # Pan
         outport.send(mido.Message('control_change', control=91, value=reverb_value))  # Reverb
-        outport.send(mido.Message('control_change', control=7, value=level_value))  # Volume
+        outport.send(mido.Message('control_change', control=100, value=level_value))  # Volume
 
         # Play MIDI file with control changes
         for msg in mid.play():
             while is_paused:
-                time.sleep(0.1)  # Wait while paused
+                time.sleep(1.0)  # Wait while paused
             
             if is_stopped:
-                print("\n⏹ Playback stopped.")
+                clear()
+                print("\n⏹ Playback stopped.\n")
                 return
 
             outport.send(msg)  # Send MIDI message
-
-        print("\n✅ Playback finished.")
-        quit()
+        clear()
+        print("\n✅ Playback finished.\n")
+        sys.exit(0)
         
     except OSError as e:
         print(f"OS Error: {e}")
@@ -82,38 +129,68 @@ def play_midi(file_path, port_name):
         print(f"Unexpected Error: {e}")
         sys.exit(6)
 
+def stop_all_sounds():
+    if outport:
+        for channel in range(16):
+            outport.send(mido.Message('control_change', channel=channel, control=120, value=0))  # All Sound Off
+            outport.send(mido.Message('control_change', channel=channel, control=123, value=0))  # All Notes Off
+
+
 def control_listener():
-    """Listens for keyboard inputs to control playback."""
+    # Listens for keyboard inputs to control playback.
     global is_paused, is_stopped, pan_value, reverb_value, level_value
 
     def on_press(key):
         global is_paused, is_stopped, pan_value, reverb_value, level_value
 
+        #if not is_terminal_focused():
+        #    return  # Ignore input if terminal is not focused
+        
         try:
             if key == keyboard.Key.space:
                 is_paused = not is_paused
-                print("\n⏸ Paused" if is_paused else "\n▶ Resumed")
+                clear()
+                print("\n🎵 Now playing:", file_name, "\nControls: [SPACE] Pause/Resume  |  [Q] Quit  |  [P] Pan  |  [R] Reverb  |  [L] Level\n", "\n⏸ Paused" if is_paused else "\n▶ Resumed")
 
             elif key.char and key.char.lower() == "q":
                 is_stopped = True
+                stop_all_sounds()
                 print("\n⏹ Stopping playback...")
                 return False  # Stop listener
 
             elif key.char and key.char.lower() == "p":  # Adjust pan (CC#10)
-                pan_value = get_value_from_user("Pan (0-127): p")
-                print(f"\n🔄 Pan set to {pan_value}")
+                clear()
+                print("\n🎵 Now playing:", file_name)
+                print("Controls: [SPACE] Pause/Resume  |  [Q] Quit  |  [P] Pan  |  [R] Reverb  |  [L] Level\n")
+                pan_value = get_value_from_user("Pan (0-127): \b")
+                clear()
+                print("\n🎵 Now playing:", file_name)
+                print("Controls: [SPACE] Pause/Resume  |  [Q] Quit  |  [P] Pan  |  [R] Reverb  |  [L] Level\n")
+                print(f"🔄 Pan set to {pan_value}")
                 if outport:
                     outport.send(mido.Message('control_change', control=10, value=pan_value))
 
             elif key.char and key.char.lower() == "r":  # Adjust reverb (CC#91)
-                reverb_value = get_value_from_user("Reverb (0-127): r")
-                print(f"\n🔄 Reverb set to {reverb_value}")
+                clear()
+                print("\n🎵 Now playing:", file_name)
+                print("Controls: [SPACE] Pause/Resume  |  [Q] Quit  |  [P] Pan  |  [R] Reverb  |  [L] Level\n")
+                reverb_value = get_value_from_user("Reverb (0-127): \b")
+                clear()
+                print("\n🎵 Now playing:", file_name)
+                print("Controls: [SPACE] Pause/Resume  |  [Q] Quit  |  [P] Pan  |  [R] Reverb  |  [L] Level\n")
+                print(f"🔄 Reverb set to {reverb_value}")
                 if outport:
                     outport.send(mido.Message('control_change', control=91, value=reverb_value))
 
             elif key.char and key.char.lower() == "l":  # Adjust level (CC#7)
-                level_value = get_value_from_user("Level (0-127): l")
-                print(f"\n🔄 Level set to {level_value}")
+                clear()
+                print("\n🎵 Now playing:", file_name)
+                print("Controls: [SPACE] Pause/Resume  |  [Q] Quit  |  [P] Pan  |  [R] Reverb  |  [L] Level\n")
+                level_value = get_value_from_user("Level (0-127): \b")
+                clear()
+                print("\n🎵 Now playing:", file_name)
+                print("Controls: [SPACE] Pause/Resume  |  [Q] Quit  |  [P] Pan  |  [R] Reverb  |  [L] Level\n")
+                print(f"🔄 Level set to {level_value}")
                 if outport:
                     outport.send(mido.Message('control_change', control=7, value=level_value))
 
@@ -121,12 +198,10 @@ def control_listener():
             pass  # Ignore special keys
 
     def get_value_from_user(prompt):
-        """Prompt the user for a value, ensuring it's within the valid range."""
+        # Prompt the user for a value, ensuring it's within the valid range.
         while True:
-            sys.stdout.write(f"{prompt} ")  # Display prompt inline
-            sys.stdout.flush()  # Ensure it's printed immediately
             try:
-                value = int(input())  # Wait for user input
+                value = int(input(prompt + " "))  # Print prompt and get input
                 if 0 <= value <= 127:
                     return value
                 else:
@@ -138,6 +213,7 @@ def control_listener():
         listener.join()
 
 def main():
+    global file_name
     parser = argparse.ArgumentParser(description="SCMID - A MIDI player for Nuked-SC55 with playback controls")
     
     parser.add_argument("--list", action="store_true", help="List available MIDI output ports")
@@ -155,6 +231,8 @@ def main():
         parser.print_help()
         sys.exit(1)
 
+    file_name = args.file
+    
     # Start keyboard control listener in a separate thread
     control_thread = threading.Thread(target=control_listener, daemon=True)
     control_thread.start()
