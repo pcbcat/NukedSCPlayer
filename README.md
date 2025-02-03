@@ -22,3 +22,5 @@ sudo apt install python3-pynput
 
 - Improve CLI
 - Add more functions
+- Figure out how to compile
+- Add updater
