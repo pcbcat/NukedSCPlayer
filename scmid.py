@@ -150,13 +150,17 @@ def control_listener():
             if key == keyboard.Key.space:
                 is_paused = not is_paused
                 clear()
-                print("\n🎵 Now playing:", file_name, "\nControls: [SPACE] Pause/Resume  |  [Q] Quit  |  [P] Pan  |  [R] Reverb  |  [L] Level\n", "\n⏸ Paused" if is_paused else "\n▶ Resumed")
-
+                print(f"\n🎵 Now playing:", file_name, "\nControls: [SPACE] Pause/Resume  |  [Q] Quit  |  [P] Pan  |  [R] Reverb  |  [L] Level\n", "\n⏸ Paused" if is_paused else "\n▶ Resumed")
+                if is_paused: 
+                    stop_all_sounds()
+                else: print()
+                
             elif key.char and key.char.lower() == "q":
                 is_stopped = True
+                print("\n⏹ Stopping...")
                 stop_all_sounds()
-                print("\n⏹ Stopping playback...")
                 return False  # Stop listener
+                quit()
 
             elif key.char and key.char.lower() == "p":  # Adjust pan (CC#10)
                 clear()
