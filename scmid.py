@@ -1,3 +1,4 @@
+# Import libaries
 import mido
 import argparse
 import sys
@@ -18,6 +19,8 @@ file_name = None
 outport = None
 
 """
+W.I.P code for x11 and NT windowing systems
+
 if os.name == "posix":  # Linux/macOS (only works for X11)
     try:
         from Xlib import display
@@ -85,7 +88,7 @@ def play_midi(file_path, port_name):
     try:
         global outport
         outport = mido.open_output(port_name)  # Open the output port
-
+        time.sleep(1.0)
         try:
             mid = mido.MidiFile(file_path)
         except FileNotFoundError:
