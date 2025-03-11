@@ -11,8 +11,9 @@ NukedSCPlayer uses multiple python packages to work:
 ```
 pip install mido
 pip install pynput
-~~pip install python-rtmidi~~ #! Broken as of 3/11/25, see [#1](https://github.com/pcbcat/NukedSCPlayer/issues/1)
 ```
+> ~~pip install python-rtmidi~~ is broken as of 3/11/25, see [#1](https://github.com/pcbcat/NukedSCPlayer/issues/1)
+
 ## How to use
 To use NukedSCPlayer, type:
 ```
