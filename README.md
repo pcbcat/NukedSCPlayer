@@ -3,6 +3,8 @@ NukedSCPlayer is an interface for [Nukeykt's](https://github.com/nukeykt) [Nuked
 
 ![image](https://github.com/user-attachments/assets/ea1584b7-88d6-4e3e-8e4d-5eb26b0c05eb)
 
+> WARNING: I may not be able to help you if you have problems with this software, as this is my first time making a app that uses non-standard libaries. So if there are any conflicts with your system, I will most likely not be able to help.
+
 ## Requirements
 NukedSCPlayer uses multiple python packages to work:
 
