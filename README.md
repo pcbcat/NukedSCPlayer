@@ -1,5 +1,6 @@
 # NukedSCPlayer
 NukedSCPlayer is an interface for [Nukeykt's](https://github.com/nukeykt) [Nuked-SC55](https://github.com/nukeykt/Nuked-SC55) MIDI emulator that allows users to play midi files through the commandline.
+> NukedSCPlayer is broken as of now, and I don't have the time to fix it so ill update everyone when it's fixed.
 
 ![image](https://github.com/user-attachments/assets/ea1584b7-88d6-4e3e-8e4d-5eb26b0c05eb)
 
