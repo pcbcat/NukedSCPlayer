@@ -1,2 +1,3 @@
 # NukedSCPlayer
-A CLI frontend for playing MIDI files with Nuked-SC55.
+blah blah blah placeholder
+will put stuff here later
